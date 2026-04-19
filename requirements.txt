@@ -1,0 +1,18 @@
+PyPDF2==3.0.1
+PyMuPDF==1.23.7
+python-docx==1.1.0
+spacy==3.7.2
+Flask==2.3.3
+Flask-SQLAlchemy==3.1.1
+Werkzeug==2.3.7
+pytest==7.4.3
+
+# AI Analysis Pipeline
+opencv-python==4.9.0.80
+deepface==0.0.93
+mediapipe==0.10.9
+SpeechRecognition==3.10.1
+sentence-transformers==2.3.1
+tf-keras==2.16.0
+
+.venv\Scripts\python.exe app.py

@@ -1,0 +1,324 @@
+{% extends "base.html" %} {% block title %}Resume Upload - Interview Ninja{%
+endblock %} {% block content %}
+<div class="container upload-container">
+  <div class="card">
+    <h1>Interview Ninja</h1>
+    <p class="subtitle">AI-Powered Mock Interview Practice</p>
+
+    <div class="upload-section">
+      <h2>Step 1: Upload Your Resume</h2>
+      <p class="description">
+        Upload your resume in PDF or DOCX format (max 10MB)
+      </p>
+
+      <form id="resumeForm" class="form-group">
+        <div class="file-input-wrapper">
+          <input
+            type="file"
+            id="resumeFile"
+            name="file"
+            accept=".pdf,.docx"
+            required
+          />
+          <label for="resumeFile" class="file-input-label">
+            <span class="upload-icon">📄</span>
+            <span class="upload-text">Click to upload or drag file here</span>
+          </label>
+        </div>
+
+        <div id="fileInfo" class="file-info"></div>
+      </form>
+
+      <button id="uploadBtn" class="btn btn-primary" disabled>
+        Upload Resume
+      </button>
+
+      <div id="loadingSpinner" class="spinner hidden">
+        <div class="spinner-animation"></div>
+        <p>Parsing resume...</p>
+      </div>
+
+      <div id="errorAlert" class="alert alert-danger hidden"></div>
+      <div id="successAlert" class="alert alert-success hidden"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById("resumeForm");
+  const fileInput = document.getElementById("resumeFile");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const fileInfo = document.getElementById("fileInfo");
+  const spinner = document.getElementById("loadingSpinner");
+  const errorAlert = document.getElementById("errorAlert");
+  const successAlert = document.getElementById("successAlert");
+
+  // File input change handler
+  fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      fileInfo.innerHTML = `
+            <div class="file-details">
+                <p><strong>File:</strong> ${file.name}</p>
+                <p><strong>Size:</strong> ${sizeMB} MB</p>
+                <p><strong>Type:</strong> ${file.type || "Unknown"}</p>
+            </div>
+        `;
+      uploadBtn.disabled = false;
+    } else {
+      fileInfo.innerHTML = "";
+      uploadBtn.disabled = true;
+    }
+  });
+
+  // Upload button click handler
+  uploadBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    // Show loading state
+    uploadBtn.disabled = true;
+    spinner.classList.remove("hidden");
+    errorAlert.classList.add("hidden");
+    successAlert.classList.add("hidden");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/v1/resume/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        successAlert.innerHTML = `
+                <h3>Resume Uploaded Successfully!</h3>
+                <p><strong>Name:</strong> ${result.name}</p>
+                <p><strong>Skills Found:</strong> ${result.skill_count}</p>
+                <p><a href="/review/${result.candidate_id}" class="btn btn-secondary">Review & Start Interview</a></p>
+            `;
+        successAlert.classList.remove("hidden");
+      } else {
+        throw new Error(result.error || "Upload failed");
+      }
+    } catch (error) {
+      errorAlert.textContent = error.message;
+      errorAlert.classList.remove("hidden");
+    } finally {
+      spinner.classList.add("hidden");
+      uploadBtn.disabled = false;
+    }
+  });
+
+  // Drag and drop support
+  const fileInputWrapper = document.querySelector(".file-input-wrapper");
+
+  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+    fileInputWrapper.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ["dragenter", "dragover"].forEach((eventName) => {
+    fileInputWrapper.addEventListener(eventName, highlight, false);
+  });
+
+  ["dragleave", "drop"].forEach((eventName) => {
+    fileInputWrapper.addEventListener(eventName, unhighlight, false);
+  });
+
+  function highlight(e) {
+    fileInputWrapper.classList.add("dragover");
+  }
+
+  function unhighlight(e) {
+    fileInputWrapper.classList.remove("dragover");
+  }
+
+  fileInputWrapper.addEventListener("drop", handleDrop, false);
+
+  function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0) {
+      fileInput.files = files;
+      fileInput.dispatchEvent(new Event("change"));
+    }
+  }
+</script>
+
+<style>
+  .upload-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+
+  .card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    text-align: center;
+  }
+
+  h1 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+  }
+
+  .upload-section h2 {
+    color: #34495e;
+    margin-bottom: 1rem;
+  }
+
+  .description {
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+  }
+
+  .file-input-wrapper {
+    border: 2px dashed #bdc3c7;
+    border-radius: 8px;
+    padding: 3rem 2rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .file-input-wrapper:hover,
+  .file-input-wrapper.dragover {
+    border-color: #3498db;
+    background-color: #ecf0f1;
+  }
+
+  .file-input-label {
+    cursor: pointer;
+    display: block;
+  }
+
+  .upload-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .upload-text {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+  }
+
+  .file-input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .file-info {
+    margin-bottom: 1rem;
+  }
+
+  .file-details {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: left;
+  }
+
+  .btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: #2980b9;
+  }
+
+  .btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    background: #95a5a6;
+  }
+
+  .btn-secondary:hover {
+    background: #7f8c8d;
+  }
+
+  .spinner {
+    margin: 2rem 0;
+  }
+
+  .spinner-animation {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .alert {
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+    text-align: left;
+  }
+
+  .alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .form-group {
+    margin-bottom: 2rem;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %} {% block title %}Interview Session - Interview Ninja{%
+endblock %} {% block content %}
+<div class="interview-container container">
+  <div class="left-panel card">
+    <div class="question-section">
+      <div class="question-header">
+        <span id="questionNumber" class="question-number">Question 1 / 10</span>
+        <span id="questionCategory" class="question-category">Technical</span>
+      </div>
+      <p id="questionText" class="question-text">Loading question...</p>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="video-section card">
+      <video
+        id="webcamPreview"
+        autoplay
+        playsinline
+        muted
+        class="webcam-preview"
+      ></video>
+      <div id="recordingIndicator" class="recording-indicator hidden">
+        <div class="recording-dot"></div>
+        <span>REC</span>
+      </div>
+    </div>
+
+    <div class="timer-section card">
+      <div id="timer" class="timer">01:30</div>
+      <p id="timerStatus" class="timer-status">Ready</p>
+    </div>
+
+    <div class="controls-section card">
+      <button id="startRecordingBtn" class="btn btn-record">
+        Start Recording
+      </button>
+      <button id="stopRecordingBtn" class="btn btn-stop hidden">
+        Stop Recording
+      </button>
+      <button id="skipBtn" class="btn btn-secondary">Skip Question</button>
+    </div>
+
+    <div id="uploadStatus" class="upload-status card hidden">
+      <div class="spinner-animation"></div>
+      <p>Uploading response...</p>
+    </div>
+  </div>
+</div>
+
+<div id="errorAlert" class="alert alert-danger hidden"></div>
+
+<div id="permissionDenial" class="permission-denial hidden">
+  <h3>Permission Denied</h3>
+  <p>We need access to your webcam and microphone to record responses.</p>
+  <p>Please check your browser permissions and try again.</p>
+  <button id="retryPermissionBtn" class="btn btn-primary">
+    Retry Permission
+  </button>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/media_capture.js') }}"></script>
+<script src="{{ url_for('static', filename='js/interview_session.js') }}"></script>
+{% endblock %}

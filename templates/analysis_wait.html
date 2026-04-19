@@ -1,0 +1,166 @@
+{% extends "base.html" %} {% block title %}Analysis in Progress - Interview
+Ninja{% endblock %} {% block content %}
+<div class="analysis-wait-container">
+  <div class="card">
+    <div class="spinner-large">
+      <div class="spinner-animation"></div>
+    </div>
+
+    <h1>Your Interview is Being Analyzed</h1>
+    <p class="subtitle">
+      We're processing your responses to provide detailed feedback.
+    </p>
+
+    <div class="progress-section">
+      <h2>Analysis Progress</h2>
+
+      <div class="progress-item">
+        <span class="progress-label">Emotion Analysis</span>
+        <div class="progress-bar">
+          <div id="emotionProgress" class="progress-fill"></div>
+        </div>
+        <span id="emotionStatus" class="status">Pending...</span>
+      </div>
+
+      <div class="progress-item">
+        <span class="progress-label">Voice Analysis</span>
+        <div class="progress-bar">
+          <div id="voiceProgress" class="progress-fill"></div>
+        </div>
+        <span id="voiceStatus" class="status">Pending...</span>
+      </div>
+
+      <div class="progress-item">
+        <span class="progress-label">Posture Analysis</span>
+        <div class="progress-bar">
+          <div id="postureProgress" class="progress-fill"></div>
+        </div>
+        <span id="postureStatus" class="status">Pending...</span>
+      </div>
+
+      <div class="progress-item">
+        <span class="progress-label">Answer Quality</span>
+        <div class="progress-bar">
+          <div id="answerProgress" class="progress-fill"></div>
+        </div>
+        <span id="answerStatus" class="status">Pending...</span>
+      </div>
+
+      <div class="progress-item">
+        <span class="progress-label">Report Generation</span>
+        <div class="progress-bar">
+          <div id="reportProgress" class="progress-fill"></div>
+        </div>
+        <span id="reportStatus" class="status">Pending...</span>
+      </div>
+    </div>
+
+    <div class="time-estimate">
+      <p>Estimated time: 1–3 minutes (AI models are processing your responses)</p>
+      <p>Do not close this window while analysis is in progress.</p>
+    </div>
+
+    <div id="completeMessage" class="complete-message hidden">
+      <h2>Analysis Complete!</h2>
+      <p>Your report is ready. Redirecting...</p>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get("session_id");
+
+  let pollingInterval = null;
+  let pollCount = 0;
+  const maxPolls = 300; // 5 minutes — posture subprocess + Whisper STT take time
+
+  async function pollAnalysisStatus() {
+    try {
+      const response = await fetch(`/api/v1/session/analysis/status/${sessionId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Poll failed:", data);
+        return;
+      }
+
+      updateProgressDisplay(data.status);
+
+      if (data.status === "analyzed" || data.status === "complete") {
+        clearInterval(pollingInterval);
+        document.getElementById("completeMessage").classList.remove("hidden");
+        setTimeout(() => {
+          window.location.href = `/report?session_id=${sessionId}`;
+        }, 2000);
+      }
+
+      if (data.status === "failed") {
+        clearInterval(pollingInterval);
+        document.getElementById("completeMessage").innerHTML =
+          "<h2>⚠️ Analysis Failed</h2><p>Something went wrong. <a href='/'>Go back</a> and try again.</p>";
+        document.getElementById("completeMessage").classList.remove("hidden");
+        return;
+      }
+
+      pollCount++;
+      if (pollCount >= maxPolls) {
+        clearInterval(pollingInterval);
+        document.getElementById("completeMessage").innerHTML =
+          "<h2>⏱️ Still Processing...</h2><p>Analysis is taking longer than expected (AI models are warming up). " +
+          "<a href='/report?session_id=" + sessionId + "'>View partial report</a> or wait here.</p>";
+        document.getElementById("completeMessage").classList.remove("hidden");
+        // Keep polling every 5s in case it finishes
+        pollingInterval = setInterval(pollAnalysisStatus, 5000);
+      }
+    } catch (error) {
+      console.error("Polling error:", error);
+    }
+  }
+
+  function updateProgressDisplay(status) {
+    const statusMap = {
+      analyzing: [25, 0, 0, 0, 0],
+      emotion_done: [100, 0, 0, 0, 0],
+      voice_done: [100, 100, 0, 0, 0],
+      posture_done: [100, 100, 100, 0, 0],
+      answer_done: [100, 100, 100, 100, 0],
+      analyzed: [100, 100, 100, 100, 100],
+    };
+
+    const progress = statusMap[status] || [0, 0, 0, 0, 0];
+
+    const elements = [
+      { id: "emotionProgress", status: "emotionStatus" },
+      { id: "voiceProgress", status: "voiceStatus" },
+      { id: "postureProgress", status: "postureStatus" },
+      { id: "answerProgress", status: "answerStatus" },
+      { id: "reportProgress", status: "reportStatus" },
+    ];
+
+    elements.forEach((el, i) => {
+      const fill = document.getElementById(el.id);
+      const statusLabel = document.getElementById(el.status);
+      if (!fill || !statusLabel) return;
+      fill.style.width = `${progress[i]}%`;
+      if (progress[i] === 100) {
+        statusLabel.textContent = "✓ Complete";
+        statusLabel.style.color = "#27ae60";
+      } else if (progress[i] > 0) {
+        statusLabel.textContent = "In Progress...";
+      }
+    });
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (!sessionId) {
+      alert("No session ID provided");
+      window.location.href = "/";
+      return;
+    }
+
+    pollingInterval = setInterval(pollAnalysisStatus, 1000);
+    pollAnalysisStatus();
+  });
+</script>
+{% endblock %}

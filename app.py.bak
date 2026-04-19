@@ -1,0 +1,43 @@
+from flask import Flask
+import os
+from models import db
+from routes.resume import resume_bp
+from routes.session import session_bp
+
+def create_app():
+    """Application factory pattern"""
+    app = Flask(__name__)
+
+    # Configuration
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///interview_ninja.db')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max file size
+
+    # Initialize extensions
+    db.init_app(app)
+
+    # Register blueprints
+    app.register_blueprint(resume_bp)
+    app.register_blueprint(session_bp)
+
+    # Create upload directory
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    # Basic routes
+    @app.route('/')
+    def index():
+        return app.send_static_file('index.html')
+
+    @app.route('/review/<int:candidate_id>')
+    def review(candidate_id):
+        return app.send_static_file('review.html')
+
+    return app
+
+if __name__ == '__main__':
+    app = create_app()
+    with app.app_context():
+        db.create_all()  # Create tables
+    app.run(debug=True, host='0.0.0.0', port=5000)

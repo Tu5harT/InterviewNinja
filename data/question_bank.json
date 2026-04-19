@@ -1,0 +1,86 @@
+{
+  "python": [
+    "Tell me about your most complex Python project. What design patterns did you use?",
+    "How do you handle exceptions in Python? Give me a specific example.",
+    "What's the difference between a list and a tuple in Python? When would you use each?",
+    "Explain the concept of list comprehension. Can you give me an example?",
+    "What is a lambda function? When should you use one?",
+    "How do you manage dependencies in Python? What tools have you used?",
+    "Explain the difference between `pass`, `continue`, and `break` in loops.",
+    "What are decorators in Python? Give me an example.",
+    "How do you implement error handling in Python?",
+    "Explain the Global Interpreter Lock (GIL). How does it affect multithreading?"
+  ],
+  "machine-learning": [
+    "Explain the bias-variance tradeoff. How does it relate to overfitting?",
+    "How do you handle missing data in a machine learning pipeline?",
+    "Describe a machine learning model you built from scratch. What was your approach?",
+    "What methods would you use to prevent overfitting?",
+    "How do you evaluate a classification model? Which metrics are most important?",
+    "Explain cross-validation and why it's important.",
+    "What's the difference between supervised and unsupervised learning?",
+    "How do you handle imbalanced datasets?",
+    "Describe feature engineering. Why is it important?",
+    "Walk me through your hyperparameter tuning process."
+  ],
+  "flask": [
+    "How do you structure a large Flask application?",
+    "Explain Flask blueprints and when you'd use them.",
+    "How do you handle database migrations in Flask?",
+    "Describe your approach to testing Flask applications.",
+    "How do you handle authentication in Flask?",
+    "Explain the Flask request/response cycle.",
+    "How do you manage configuration in Flask across environments?",
+    "What middleware have you used with Flask?",
+    "How do you handle errors and exceptions in Flask?",
+    "Describe how you would implement caching in Flask."
+  ],
+  "sql": [
+    "Write a SQL query to find duplicate rows in a table.",
+    "Explain the difference between INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL OUTER JOIN.",
+    "What indexing strategy would you use for a query with many WHERE clauses?",
+    "How do you optimize a slow SQL query?",
+    "Explain normalization and its normal forms.",
+    "What's the difference between a stored procedure and a trigger?",
+    "How do you handle transactions in SQL?",
+    "What is a view in SQL? When would you use one?",
+    "Explain query execution plans. How do you read one?",
+    "How would you design a database schema for a social media application?"
+  ],
+  "tensorflow": [
+    "Explain the difference between TensorFlow 1.x and 2.x.",
+    "How do you build a neural network in TensorFlow?",
+    "Describe the gradient descent optimization process.",
+    "How do you implement a custom loss function in TensorFlow?",
+    "Explain eager execution vs. graph execution.",
+    "How do you save and load TensorFlow models?",
+    "What is transfer learning? How would you implement it with TensorFlow?",
+    "Describe your approach to training a deep learning model.",
+    "How do you handle large datasets in TensorFlow?",
+    "Explain the role of activation functions in neural networks."
+  ],
+  "opencv": [
+    "What are the main modules in OpenCV?",
+    "How do you read, display, and write images in OpenCV?",
+    "Explain the difference between BGR and RGB color spaces in OpenCV.",
+    "How would you implement a face detection algorithm?",
+    "Describe a computer vision project you worked on.",
+    "How do you perform image processing operations like blur, edge detection?",
+    "Explain contour detection and its applications.",
+    "How do you handle video capture and processing in OpenCV?",
+    "What are morphological operations? When would you use them?",
+    "How do you implement object tracking in a video?"
+  ],
+  "data-structures-algorithms": [
+    "Explain the time and space complexity of binary search.",
+    "Describe different sorting algorithms (quicksort, mergesort, heapsort) and their complexities.",
+    "How would you implement a binary search tree?",
+    "Explain the difference between stacks and queues.",
+    "How do you traverse a tree? Explain different traversal methods.",
+    "Describe dynamic programming and give an example.",
+    "Explain graph traversal. What are BFS and DFS?",
+    "How do you detect a cycle in a graph?",
+    "Explain the concept of memoization.",
+    "How would you find the longest common subsequence between two strings?"
+  ]
+}
