@@ -76,18 +76,90 @@ class QuestionGenerator:
         """Select technical questions based on candidate skills"""
         questions = []
         
+        # Mapping from extracted skill names to question bank keys
+        skill_mapping = {
+            'python': 'python',
+            'java': 'java',
+            'javascript': 'javascript',
+            'typescript': 'javascript',
+            'c++': 'data-structures-algorithms',
+            'c#': 'python',
+            'go': 'python',
+            'rust': 'python',
+            'ruby': 'python',
+            'sql': 'sql',
+            'machine learning': 'machine-learning',
+            'ml': 'machine-learning',
+            'deep learning': 'tensorflow',
+            'tensorflow': 'tensorflow',
+            'pytorch': 'tensorflow',
+            'keras': 'tensorflow',
+            'opencv': 'opencv',
+            'computer vision': 'opencv',
+            'flask': 'flask',
+            'django': 'flask',
+            'react': 'react',
+            'angular': 'react',
+            'vue': 'react',
+            'html': 'javascript',
+            'css': 'javascript',
+            'aws': 'system-design',
+            'gcp': 'system-design',
+            'azure': 'system-design',
+            'docker': 'system-design',
+            'kubernetes': 'system-design',
+            'jenkins': 'system-design',
+            'git': 'javascript',
+            'linux': 'javascript',
+            'data structures': 'data-structures-algorithms',
+            'algorithms': 'data-structures-algorithms',
+            'system design': 'system-design',
+            'nlp': 'machine-learning',
+            'rest api': 'flask',
+            'graphql': 'flask',
+            'microservices': 'system-design',
+            'mongodb': 'sql',
+            'postgresql': 'sql',
+            'mysql': 'sql',
+            'redis': 'sql',
+            'data analysis': 'python',
+            'data science': 'python',
+            'tableau': 'python',
+            'excel': 'python',
+            'hadoop': 'machine-learning',
+            'spark': 'machine-learning',
+            'kafka': 'flask',
+            'agile': 'behavioral',
+            'scrum': 'behavioral',
+            'jira': 'javascript',
+            'testing': 'python',
+            'selenium': 'python',
+            'api': 'flask',
+            'oauth': 'flask',
+            'authentication': 'flask',
+        }
+        
         # Map skills to question bank keys (handle variations)
         for skill in skills:
-            skill_name = skill['skill'].lower().replace(' ', '-')
+            skill_key = skill['skill'].lower().strip()
             
-            # Try exact match first
-            if skill_name in self.question_bank:
-                bank = self.question_bank[skill_name]
-            elif skill_name.replace('-', '') in self.question_bank:
-                bank = self.question_bank[skill_name.replace('-', '')]
+            # Direct match or use mapping
+            bank_key = skill_mapping.get(skill_key)
+            if not bank_key:
+                # Try fuzzy match - check if any question bank key is in the skill
+                for kb in self.question_bank:
+                    if kb in skill_key or skill_key in kb:
+                        bank_key = kb
+                        break
+            
+            if bank_key and bank_key in self.question_bank:
+                bank = self.question_bank[bank_key]
             else:
-                # Partial match or skip
-                continue
+                # Try exact match in question bank keys
+                if skill_key in self.question_bank:
+                    bank = self.question_bank[skill_key]
+                else:
+                    continue
             
             # Add questions until we have enough
             for q in bank:
