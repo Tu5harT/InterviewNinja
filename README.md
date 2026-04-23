@@ -58,16 +58,43 @@ python -m spacy download en_core_web_sm
 mkdir -p data uploads recordings instance
 ```
 
-### 6. Run the Application
+### 7. Run the Application
 
 ```bash
+# Activate virtual environment (if not already active)
+.venv\Scripts\activate
+
+# Start the server
 python app.py
 ```
 
-### 7. Open in Browser
+### 8. Open in Browser
 
 ```
 http://localhost:5000
+```
+
+## Daily Usage (After Setup)
+
+After one-time setup, to start the application:
+
+```bash
+# 1. Navigate to project folder
+cd interviewNinja-leetcode-v.1
+
+# 2. Activate virtual environment
+.venv\Scripts\activate
+
+# 3. Start server
+python app.py
+
+# 4. Open browser to http://localhost:5000
+```
+
+Or simply double-click `start.bat` (if using Windows):
+
+```bash
+start.bat
 ```
 
 ## First-Time Setup Notes
