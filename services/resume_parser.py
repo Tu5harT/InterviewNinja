@@ -5,6 +5,11 @@ import re
 import json
 from pathlib import Path
 
+try:
+    import spacy
+except ImportError:
+    spacy = None
+
 class ResumeParsingError(Exception):
     """Resume parsing error"""
     pass
@@ -105,9 +110,8 @@ def extract_skills(text: str, skills_taxonomy_path: str = 'data/skills_taxonomy.
         Dict with 'skills' list and 'raw' token list
     """
     try:
-        import spacy
-        nlp = spacy.load('en_core_web_sm')
-    except (ImportError, OSError):
+        nlp = spacy.load('en_core_web_sm') if spacy is not None else None
+    except OSError:
         nlp = None
     
     # Load skills taxonomy

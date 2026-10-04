@@ -115,10 +115,7 @@ class InterviewSessionManager {
     const question = this.questions[this.currentQuestionIndex];
     const formData = new FormData();
     formData.append("session_id", this.sessionId);
-    formData.append(
-      "question_id",
-      question.id || this.currentQuestionIndex + 1,
-    );
+    formData.append("question_id", question.id);
     formData.append("video", blob, `q${this.currentQuestionIndex + 1}.webm`);
 
     try {

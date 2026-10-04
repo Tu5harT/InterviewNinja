@@ -100,11 +100,13 @@ class TestQuestionGenerator:
 
     def test_generate_questions_for_session(self):
         """Test the convenience function"""
-        with patch('services.question_generator.generate_questions_for_session') as mock_gen:
-            mock_gen.return_value = [{'text': 'test', 'category': 'technical', 'sequence': 1}]
+        with patch('services.question_generator.QuestionGenerator') as mock_cls:
+            expected = [{'text': 'test', 'category': 'technical', 'sequence': 1}]
+            mock_cls.return_value.generate_questions.return_value = expected
 
             result = generate_questions_for_session(self.sample_skills)
-            mock_gen.assert_called_once()
+            mock_cls.return_value.generate_questions.assert_called_once_with(self.sample_skills, 10)
+            assert result == expected
 
     def test_question_randomization(self):
         """Test that questions are randomized"""
@@ -187,8 +189,10 @@ class TestQuestionGenerator:
             assert len(questions) == 1
 
             # Test larger count
+            # Only 5 unique questions exist, and questions are never repeated
             questions = qg.generate_questions(self.sample_skills, 10)
-            assert len(questions) == 10  # Should pad with behavioral
+            assert len(questions) == 5
+            assert len({q['text'] for q in questions}) == 5
 
     def test_json_bank_loading(self):
         """Test loading question banks from JSON"""

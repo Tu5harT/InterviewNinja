@@ -111,7 +111,7 @@ def get_session(session_id):
 def upload_response():
     try:
         session_id = request.form.get('session_id', type=int)
-        question_id = request.form.get('question_id', type=int) or request.form.get('question_number', type=int)
+        question_id = request.form.get('question_id', type=int)
 
         if not session_id or not question_id:
             return jsonify({'error': 'session_id and question_id required'}), 400
@@ -124,19 +124,24 @@ def upload_response():
         if not session_obj:
             return jsonify({'error': f'Session {session_id} not found'}), 404
 
+        question = Question.query.filter_by(id=question_id, session_id=session_id).first()
+        if not question:
+            return jsonify({'error': f'Question {question_id} not found in session {session_id}'}), 404
+
         video_bytes = video_file.read()
         media_info = save_media_for_response(video_bytes, session_id, question_id)
 
-        response_obj = Response(
-            session_id=session_id,
-            question_id=question_id,
-            video_path=media_info['webm_path'],
-            audio_path=media_info['wav_path'],
-            upload_status='recorded',
-            file_size_bytes=len(video_bytes)
-        )
+        # Re-recording a question replaces the earlier response
+        response_obj = Response.query.filter_by(session_id=session_id, question_id=question_id).first()
+        if not response_obj:
+            response_obj = Response(session_id=session_id, question_id=question_id)
+            db.session.add(response_obj)
+        response_obj.video_path = media_info['webm_path']
+        response_obj.audio_path = media_info['wav_path']
+        response_obj.upload_status = 'recorded'
+        response_obj.file_size_bytes = len(video_bytes)
+        response_obj.recorded_at = datetime.utcnow()
 
-        db.session.add(response_obj)
         db.session.commit()
 
         return jsonify({
@@ -162,8 +167,9 @@ def complete_session():
     if not session_obj:
         return jsonify({'error': f'Session {session_id} not found'}), 404
 
-    # Guard: only start analysis once
-    if session_obj.status in ('completed', 'analyzing', 'analyzed', 'failed'):
+    # Guard: only start analysis once (status moves through several
+    # *_done stages while analysis runs, so check for anything past 'created')
+    if session_obj.status != 'created':
         return jsonify({
             'status': 'ok',
             'message': 'Session already completed.',

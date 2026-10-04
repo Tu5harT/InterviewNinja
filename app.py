@@ -181,4 +181,7 @@ if __name__ == '__main__':
     app = create_app()
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # The Werkzeug debugger allows arbitrary code execution, so only expose it locally by default
+    debug = os.environ.get('FLASK_DEBUG', '1') == '1'
+    host = os.environ.get('HOST', '127.0.0.1')
+    app.run(debug=debug, host=host, port=int(os.environ.get('PORT', 5000)))
