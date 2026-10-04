@@ -179,3 +179,51 @@ class TestResumeParser:
                         parse_pdf(temp_path)
         finally:
             os.unlink(temp_path)
+
+def _make_pdf(path, lines, as_image=False):
+    """Write a one-page PDF with (text, fontsize) lines; optionally flatten it to an image like a scan."""
+    import fitz
+    doc = fitz.open()
+    page = doc.new_page()
+    y = 60
+    for text, size in lines:
+        page.insert_text((60, y), text, fontsize=size)
+        y += size + 14
+    if as_image:
+        pix = page.get_pixmap(dpi=150)
+        scanned = fitz.open()
+        scanned.new_page(width=page.rect.width, height=page.rect.height).insert_image(page.rect, pixmap=pix)
+        doc.close()
+        doc = scanned
+    doc.save(path)
+    doc.close()
+
+
+class TestResumeNameAndScans:
+    """Name detection from layout, OCR of scanned PDFs, and unreadable files."""
+
+    def test_extract_name_skips_contact_lines(self):
+        text = "linkedin.com/in/jane-doe\njane@example.com\n+91 9876543210\nJane Doe\nEngineer"
+        assert extract_name(text) == "Jane Doe"
+
+    def test_layout_name_prefers_largest_text(self, tmp_path):
+        # Text order puts the URL first, but the name is the biggest text
+        pdf = str(tmp_path / 'r.pdf')
+        _make_pdf(pdf, [('linkedin.com/in/jane-doe', 11), ('JANE DOE', 22), ('Python developer with SQL skills', 11)])
+        result = parse_resume_file(pdf, 'pdf')
+        assert result['name'] == 'Jane Doe'
+        assert {s['skill'].lower() for s in result['skills']} >= {'python', 'sql'}
+
+    def test_scanned_pdf_is_ocrd(self, tmp_path):
+        pytest.importorskip('rapidocr_onnxruntime')
+        pdf = str(tmp_path / 'scan.pdf')
+        _make_pdf(pdf, [('JOHN SMITH', 24), ('Skills: Python, Java, SQL', 14), ('Experience with Docker', 14)], as_image=True)
+        result = parse_resume_file(pdf, 'pdf')
+        assert result['name'] == 'John Smith'
+        assert {'python', 'java', 'sql', 'docker'} <= {s['skill'].lower() for s in result['skills']}
+
+    def test_unreadable_pdf_raises(self, tmp_path):
+        pdf = str(tmp_path / 'blank.pdf')
+        _make_pdf(pdf, [])
+        with pytest.raises(ResumeParsingError, match="Couldn't read any text"):
+            parse_resume_file(pdf, 'pdf')
