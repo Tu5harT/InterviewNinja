@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from services.resume_parser import parse_resume_file, ResumeParsingError
 from models import db, Candidate, Session
 import os
+import uuid
 import json
 import ast
 from pathlib import Path
@@ -57,7 +58,14 @@ def upload_resume():
     
     try:
         # Save file securely
-        filename = secure_filename(file.filename)
+        # Prefix with a random id so two candidates' "resume.pdf" don't overwrite each other.
+        # secure_filename can strip a non-ASCII name down to just the extension, so keep the
+        # original extension separately.
+        original_ext = file.filename.rsplit('.', 1)[1].lower()
+        safe_name = secure_filename(file.filename) or f'resume.{original_ext}'
+        if not safe_name.lower().endswith('.' + original_ext):
+            safe_name = f'{safe_name}.{original_ext}'
+        filename = f'{uuid.uuid4().hex[:8]}_{safe_name}'
         upload_folder = current_app.config['UPLOAD_FOLDER']
         os.makedirs(upload_folder, exist_ok=True)
         
@@ -123,10 +131,12 @@ def get_candidate(candidate_id):
             except Exception:
                 skills_json = []
     
+    resume_text = candidate.resume_text or ''
+
     return jsonify({
         'candidate_id': candidate.id,
         'name': candidate.name,
         'skills': skills_json,
-        'resume_text': candidate.resume_text[:500] + '...' if len(candidate.resume_text) > 500 else candidate.resume_text,
+        'resume_text': resume_text[:500] + '...' if len(resume_text) > 500 else resume_text,
         'created_at': candidate.created_at.isoformat()
     }), 200

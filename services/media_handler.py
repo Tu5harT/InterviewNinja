@@ -44,13 +44,10 @@ class MediaHandler:
         # Try PATH first, then fall back to known winget install location
         ffmpeg_path = shutil.which('ffmpeg')
         if not ffmpeg_path:
-            _winget_ffmpeg = (
-                r'C:\Users\User\AppData\Local\Microsoft\WinGet\Packages'
-                r'\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe'
-                r'\ffmpeg-8.1-full_build\bin\ffmpeg.exe'
-            )
-            if os.path.exists(_winget_ffmpeg):
-                ffmpeg_path = _winget_ffmpeg
+            winget_dir = Path(os.environ.get('LOCALAPPDATA', '')) / 'Microsoft' / 'WinGet' / 'Packages'
+            matches = sorted(winget_dir.glob('Gyan.FFmpeg*/ffmpeg-*/bin/ffmpeg.exe')) if winget_dir.is_dir() else []
+            if matches:
+                ffmpeg_path = str(matches[-1])
         if not ffmpeg_path:
             raise MediaHandlingError('ffmpeg not found. Install ffmpeg and ensure it is on the PATH.')
 

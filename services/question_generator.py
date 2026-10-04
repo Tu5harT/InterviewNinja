@@ -152,6 +152,9 @@ class QuestionGenerator:
                         bank_key = kb
                         break
             
+            if bank_key == 'behavioral':
+                # Behavioral skills (agile, scrum) are covered by the behavioral step
+                continue
             if bank_key and bank_key in self.question_bank:
                 bank = self.question_bank[bank_key]
             else:
@@ -180,7 +183,9 @@ class QuestionGenerator:
         # Fill remaining with random technical questions if available
         if len(questions) < target:
             all_technical = []
-            for bank in self.question_bank.values():
+            for key, bank in self.question_bank.items():
+                if key == 'behavioral':
+                    continue
                 all_technical.extend(bank)
             
             for q in random.sample(all_technical, min(len(all_technical), target - len(questions))):
