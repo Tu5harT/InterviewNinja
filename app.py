@@ -140,7 +140,8 @@ def create_app():
 
             tips = generate_suggestions(session_scores)
 
-            # Extract transcript and per-question details
+            # Extract transcript and per-question details, in interview order
+            analysis_results.sort(key=lambda a: a.response.question.sequence if a.response and a.response.question else 0)
             question_details = []
             for a in analysis_results:
                 detail = {}

@@ -242,6 +242,7 @@ def analyze_session_async(app, session_id: int):
             from services.voice_analyzer import analyze_voice
             from services.posture_analyzer import analyze_posture
             from services.answer_analyzer import analyze_answer
+            from services.question_bank import reference_for
 
             print(f'[START] Real AI analysis for session {session_id} ({len(responses)} responses)')
 
@@ -251,6 +252,7 @@ def analyze_session_async(app, session_id: int):
                 # Get question text for answer quality analysis
                 question = Question.query.get(resp.question_id)
                 question_text = question.text if question else ""
+                reference = reference_for(question_text, question.category if question else None)
 
                 # ── STAGE 1: EMOTION ANALYSIS ──
                 session_obj.status = 'emotion_done'  # Show progress early
@@ -302,7 +304,7 @@ def analyze_session_async(app, session_id: int):
                 if transcript:
                     try:
                         print(f'    [ANSWER] Running answer quality analysis...')
-                        answer_result = analyze_answer(transcript, question_text)
+                        answer_result = analyze_answer(transcript, question_text, reference)
                         print(f'    [ANSWER] Result: relevance={answer_result.get("relevance_score", "?")} similarity={answer_result.get("semantic_similarity", "?")}')
                     except Exception as e:
                         print(f'    [FAIL] Answer analysis failed: {e}')
@@ -340,7 +342,15 @@ def analyze_session_async(app, session_id: int):
                         'posture_label': posture_result.get('posture_label'),
                         'posture_score': posture_result.get('posture_score'),
                         'wpm': voice_result.get('wpm'),
-                        'filler_words': voice_result.get('filler_words', {})
+                        'filler_words': voice_result.get('filler_words', {}),
+                        'question': question_text,
+                        'question_category': question.category if question else None,
+                        'question_type': reference.get('type'),
+                        'answer_score': answer_result.get('relevance_score'),
+                        'points_covered': answer_result.get('points_covered', []),
+                        'points_missed': answer_result.get('points_missed', []),
+                        'model_answer': reference.get('answer'),
+                        'off_topic': answer_result.get('off_topic', False)
                     }),
                     improvement_suggestions=json.dumps([])
                 )

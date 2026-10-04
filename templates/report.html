@@ -72,11 +72,43 @@
         <span class="q-number">Q{{ loop.index }}</span>
         <span class="q-score">Score: {{ detail.overall_score or 'N/A' }}/100</span>
       </div>
+      {% if detail.question %}
+      <p class="question-text">{{ detail.question }}</p>
+      {% endif %}
       {% if detail.transcript %}
       <div class="transcript-block">
         <strong>Your Answer:</strong>
         <p class="transcript-text">"{{ detail.transcript }}"</p>
       </div>
+      {% endif %}
+      {% if detail.answer_score is not none %}
+      <div class="answer-feedback">
+        <div class="answer-score">
+          Answer quality: <strong>{{ detail.answer_score }}/100</strong>
+          {% if detail.off_topic %}<span class="off-topic-tag">Off-topic</span>{% endif %}
+        </div>
+        {% set structural = detail.question_type in ('behavioral', 'experience') %}
+        {% if detail.points_covered %}
+        <div class="points points-covered">
+          <strong>{{ 'What you did well' if structural else 'Key points you covered' }}</strong>
+          <ul>{% for p in detail.points_covered %}<li>✓ {{ p }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+        {% if detail.points_missed %}
+        <div class="points points-missed">
+          <strong>{{ 'Add to your story next time' if structural else 'Key points you missed' }}</strong>
+          <ul>{% for p in detail.points_missed %}<li>✗ {{ p }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+        {% if detail.model_answer %}
+        <details class="model-answer">
+          <summary>{{ 'What a strong answer includes' if structural else 'Model answer' }}</summary>
+          <p>{{ detail.model_answer }}</p>
+        </details>
+        {% endif %}
+      </div>
+      {% elif detail.question and not detail.transcript %}
+      <p class="no-answer">No answer could be transcribed for this question, so it wasn't graded.</p>
       {% endif %}
       <div class="detail-stats">
         {% if detail.emotion_dominant %}
@@ -270,6 +302,74 @@
     border-radius: 0.5rem;
     line-height: 1.5;
     margin-top: 0.3rem;
+  }
+
+  .question-text {
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0.5rem 0;
+    line-height: 1.4;
+  }
+
+  .answer-feedback {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .answer-score {
+    margin-bottom: 0.5rem;
+  }
+
+  .off-topic-tag {
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 1rem;
+    background: #fdecea;
+    color: #c0392b;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .points ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.25rem 0 0.5rem;
+  }
+
+  .points li {
+    padding: 0.15rem 0;
+    line-height: 1.4;
+  }
+
+  .points-covered li {
+    color: #1e8449;
+  }
+
+  .points-missed li {
+    color: #b9770e;
+  }
+
+  .model-answer {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .model-answer summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #3498db;
+  }
+
+  .model-answer p {
+    margin: 0.5rem 0 0.25rem;
+    line-height: 1.5;
+    color: #444;
+  }
+
+  .no-answer {
+    color: #888;
+    font-style: italic;
   }
 
   .detail-stats {

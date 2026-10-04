@@ -1,209 +1,125 @@
-import pytest
 import json
-from unittest.mock import patch, MagicMock
-from services.question_generator import QuestionGenerator, generate_questions_for_session, QuestionGenerationError
+import os
+
+import pytest
+
+from services.question_bank import QuestionBankError, load_bank, load_behavioral, reference_for, canonical_skill
+from services.question_generator import QuestionGenerator, generate_questions_for_session
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _concept(text, level='medium'):
+    return {'q': text, 'type': 'concept', 'level': level, 'answer': f'Answer to {text}',
+            'points': [{'point': 'Fact one.', 'keywords': ['one']}, {'point': 'Fact two.', 'keywords': ['two']}]}
+
+
+@pytest.fixture
+def small_bank(tmp_path):
+    """A tiny, self-contained bank so tests don't depend on the real content."""
+    qdir = tmp_path / 'questions'
+    qdir.mkdir()
+    (qdir / 'bank.json').write_text(json.dumps({
+        'python': [_concept('Py easy', 'easy'), _concept('Py medium'), _concept('Py hard', 'hard'),
+                   {'q': 'Py story', 'type': 'experience', 'level': 'medium', 'answer': 'A strong answer...'}],
+        'sql': [_concept('SQL easy', 'easy'), _concept('SQL medium'), _concept('SQL hard', 'hard')],
+        'data structures': [_concept('DS easy', 'easy'), _concept('DS medium')],
+        'rest api': [_concept('REST easy', 'easy')],
+    }), encoding='utf-8')
+    behavioral = tmp_path / 'behavioral.json'
+    behavioral.write_text(json.dumps({'behavioral': ['BQ1', 'BQ2', 'BQ3', 'BQ4']}), encoding='utf-8')
+    load_bank.cache_clear()
+    load_behavioral.cache_clear()
+    return str(qdir), str(behavioral)
+
 
 class TestQuestionGenerator:
-    """Test cases for question_generator.py"""
+
+    def test_generates_target_count_with_sequences(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        questions = qg.generate_questions([{'skill': 'Python'}, {'skill': 'SQL'}], target_count=6)
+        assert len(questions) == 6
+        assert [q['sequence'] for q in questions] == list(range(1, 7))
+        assert len({q['text'] for q in questions}) == 6
+
+    def test_spreads_questions_across_skills(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        questions = qg.generate_questions([{'skill': 'Python'}, {'skill': 'SQL'}], target_count=6)
+        tags = {q['skill_tag'] for q in questions if q['category'] == 'technical'}
+        assert tags == {'Python', 'Sql'}
+
+    def test_mixes_behavioral_questions(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        questions = qg.generate_questions([{'skill': 'Python'}, {'skill': 'SQL'}], target_count=10)
+        behavioral = [q for q in questions if q['category'] == 'behavioral']
+        assert len(behavioral) == 3
+        assert questions[0]['category'] == 'technical'  # sessions open with a technical question
+
+    def test_limits_experience_questions(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        for _ in range(20):
+            questions = qg.generate_questions([{'skill': 'Python'}], target_count=4)
+            assert sum(q['text'] == 'Py story' for q in questions) <= 1
+
+    def test_aliases_map_to_shared_bank(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        questions = qg.generate_questions([{'skill': 'RESTful API'}], target_count=3)
+        assert any(q['text'] == 'REST easy' for q in questions)
+
+    def test_unknown_skills_fall_back_to_general_questions(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        questions = qg.generate_questions([{'skill': 'Underwater Basket Weaving'}], target_count=5)
+        technical = [q for q in questions if q['category'] == 'technical']
+        assert technical and all(q['skill_tag'] == 'general' for q in technical)
+
+    def test_no_skills_still_produces_a_session(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        assert len(qg.generate_questions([], target_count=5)) == 5
+
+    def test_never_repeats_questions_when_bank_is_small(self, small_bank):
+        qg = QuestionGenerator(*small_bank)
+        questions = qg.generate_questions([{'skill': 'REST API'}], target_count=30)
+        texts = [q['text'] for q in questions]
+        assert len(texts) == len(set(texts))
+
+    def test_invalid_bank_entry_is_rejected(self, tmp_path):
+        qdir = tmp_path / 'questions'
+        qdir.mkdir()
+        (qdir / 'bad.json').write_text(json.dumps({'python': [{'q': 'No points', 'type': 'concept',
+                                                               'level': 'easy', 'answer': 'x'}]}))
+        load_bank.cache_clear()
+        with pytest.raises(QuestionBankError, match='key points'):
+            load_bank(str(qdir))
+
+    def test_generate_questions_for_session_uses_real_bank(self):
+        load_bank.cache_clear()
+        load_behavioral.cache_clear()
+        questions = generate_questions_for_session([{'skill': 'Python'}, {'skill': 'Docker'}], 10)
+        assert len(questions) == 10
+
+
+class TestRealQuestionBank:
+    """Checks on the shipped bank in data/questions."""
 
     def setup_method(self):
-        """Set up test fixtures"""
-        self.sample_skills = [
-            {'skill': 'Python', 'category': 'language'},
-            {'skill': 'Machine Learning', 'category': 'ai'},
-            {'skill': 'SQL', 'category': 'database'}
-        ]
+        load_bank.cache_clear()
 
-    def test_question_generator_init_success(self):
-        """Test successful QuestionGenerator initialization"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {'python': ['test question']}
-            qg = QuestionGenerator()
-            assert qg.question_bank is not None
-            assert qg.behavioral_bank is not None
+    def test_every_resume_skill_has_questions(self):
+        with open(os.path.join(ROOT, 'data', 'skills_taxonomy.json')) as f:
+            taxonomy = json.load(f)
+        bank = load_bank()
+        missing = [s for s in taxonomy if canonical_skill(s) not in bank]
+        assert not missing, f'Skills detected from resumes but with no questions: {missing}'
 
-    def test_question_generator_init_missing_bank(self):
-        """Test initialization with missing question bank"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.side_effect = QuestionGenerationError("Bank not found")
+    def test_each_skill_has_a_mix_of_levels_and_types(self):
+        for skill, questions in load_bank().items():
+            assert len(questions) >= 6, skill
+            assert {q['level'] for q in questions} == {'easy', 'medium', 'hard'}, skill
+            assert {q['type'] for q in questions} == {'concept', 'experience'}, skill
 
-            with pytest.raises(QuestionGenerationError):
-                QuestionGenerator()
-
-    def test_generate_questions_with_skills(self):
-        """Test question generation with candidate skills"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            # Mock question banks
-            mock_load.return_value = {
-                'python': ['What is Python?', 'Explain list comprehension'],
-                'machine-learning': ['What is ML?', 'Explain overfitting'],
-                'behavioral': ['Tell me about yourself', 'Describe a challenge']
-            }
-
-            qg = QuestionGenerator()
-            questions = qg.generate_questions(self.sample_skills, target_count=5)
-
-            assert len(questions) == 5
-            assert all('text' in q for q in questions)
-            assert all('category' in q for q in questions)
-            assert all('sequence' in q for q in questions)
-
-            # Check that sequences are unique and in order
-            sequences = [q['sequence'] for q in questions]
-            assert sequences == list(range(1, 6))
-
-    def test_generate_questions_no_skills(self):
-        """Test question generation when no skills are provided"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {
-                'behavioral': ['Question 1', 'Question 2', 'Question 3']
-            }
-
-            qg = QuestionGenerator()
-            questions = qg.generate_questions([], target_count=3)
-
-            assert len(questions) == 3
-            assert all(q['category'] == 'behavioral' for q in questions)
-
-    def test_select_technical_questions(self):
-        """Test technical question selection"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {
-                'python': ['Python Q1', 'Python Q2'],
-                'sql': ['SQL Q1']
-            }
-
-            qg = QuestionGenerator()
-            used = set()
-            questions = qg._select_technical_questions(self.sample_skills, 3, used)
-
-            # Should select from Python and SQL categories
-            python_questions = [q for q in questions if 'Python' in q['skill_tag']]
-            sql_questions = [q for q in questions if 'SQL' in q['skill_tag']]
-
-            assert len(python_questions) > 0 or len(sql_questions) > 0
-
-    def test_select_behavioral_questions(self):
-        """Test behavioral question selection"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {
-                'behavioral': ['Behavioral Q1', 'Behavioral Q2', 'Behavioral Q3']
-            }
-
-            qg = QuestionGenerator()
-            used = set()
-            questions = qg._select_behavioral_questions(2, used)
-
-            assert len(questions) == 2
-            assert all(q['category'] == 'behavioral' for q in questions)
-            assert all(q['skill_tag'] == 'communication' for q in questions)
-
-    def test_generate_questions_for_session(self):
-        """Test the convenience function"""
-        with patch('services.question_generator.QuestionGenerator') as mock_cls:
-            expected = [{'text': 'test', 'category': 'technical', 'sequence': 1}]
-            mock_cls.return_value.generate_questions.return_value = expected
-
-            result = generate_questions_for_session(self.sample_skills)
-            mock_cls.return_value.generate_questions.assert_called_once_with(self.sample_skills, 10)
-            assert result == expected
-
-    def test_question_randomization(self):
-        """Test that questions are randomized"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {
-                'python': ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'],
-                'behavioral': ['BQ1', 'BQ2']
-            }
-
-            qg = QuestionGenerator()
-
-            # Generate multiple sets to check randomization
-            sets = []
-            for _ in range(3):
-                questions = qg.generate_questions([{'skill': 'Python', 'category': 'language'}], 3)
-                sets.append([q['text'] for q in questions])
-
-            # At least one set should be different (with high probability)
-            assert not all(s == sets[0] for s in sets)
-
-    def test_question_deduplication(self):
-        """Test that duplicate questions are avoided"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {
-                'python': ['Duplicate Q', 'Unique Q'],
-                'behavioral': ['Duplicate Q', 'Behavioral Q']  # Same text as python
-            }
-
-            qg = QuestionGenerator()
-            questions = qg.generate_questions(self.sample_skills, 3)
-
-            # Should not have duplicate text
-            texts = [q['text'] for q in questions]
-            assert len(texts) == len(set(texts))
-
-    def test_skill_matching_variations(self):
-        """Test skill matching with different capitalizations and formats"""
-        skills = [
-            {'skill': 'python', 'category': 'language'},  # lowercase
-            {'skill': 'Machine-Learning', 'category': 'ai'},  # dash
-            {'skill': 'sql', 'category': 'database'}  # lowercase
-        ]
-
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {
-                'python': ['Python question'],
-                'machinelearning': ['ML question'],  # no dash
-                'sql': ['SQL question']
-            }
-
-            qg = QuestionGenerator()
-            questions = qg.generate_questions(skills, 2)
-
-            # Should find questions for at least some skills
-            assert len(questions) >= 1
-
-    def test_empty_question_bank_handling(self):
-        """Test handling of empty question banks"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {}
-
-            qg = QuestionGenerator()
-
-            # Should handle gracefully
-            questions = qg.generate_questions(self.sample_skills, 1)
-            assert isinstance(questions, list)
-
-    def test_target_count_bounds(self):
-        """Test question generation with different target counts"""
-        with patch('services.question_generator.QuestionGenerator._load_bank') as mock_load:
-            mock_load.return_value = {
-                'python': ['Q1', 'Q2', 'Q3'],
-                'behavioral': ['BQ1', 'BQ2']
-            }
-
-            qg = QuestionGenerator()
-
-            # Test small count
-            questions = qg.generate_questions(self.sample_skills, 1)
-            assert len(questions) == 1
-
-            # Test larger count
-            # Only 5 unique questions exist, and questions are never repeated
-            questions = qg.generate_questions(self.sample_skills, 10)
-            assert len(questions) == 5
-            assert len({q['text'] for q in questions}) == 5
-
-    def test_json_bank_loading(self):
-        """Test loading question banks from JSON"""
-        with patch('builtins.open', create=True) as mock_open:
-            mock_file = MagicMock()
-            mock_file.read.return_value = '{"python": ["test question"]}'
-            mock_open.return_value.__enter__.return_value = mock_file
-
-            with patch('json.load') as mock_json:
-                mock_json.return_value = {"python": ["test question"]}
-
-                qg = QuestionGenerator()
-                # Should not raise exception
-                assert qg.question_bank is not None
+    def test_reference_lookup(self):
+        q = load_bank()['python'][0]
+        ref = reference_for(q['q'])
+        assert ref['type'] == q['type'] and ref['answer'] == q['answer']
+        assert reference_for('A question that is not in the bank') == {}
+        assert reference_for('Anything', category='behavioral') == {'type': 'behavioral'}

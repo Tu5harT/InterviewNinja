@@ -1,243 +1,128 @@
-import json
 import random
 from typing import List, Dict
 
-class QuestionGenerationError(Exception):
-    """Question generation error"""
-    pass
+from services.question_bank import (
+    QuestionBankError, canonical_skill, load_bank, load_behavioral, QUESTIONS_DIR, BEHAVIORAL_PATH,
+)
+
+# Kept for callers that catch the old exception name
+QuestionGenerationError = QuestionBankError
+
+# Used when none of the candidate's skills has a bank
+GENERAL_SKILLS = ['data structures', 'algorithms', 'system design', 'git', 'testing', 'sql']
+
+# Difficulty for each technical slot in a session: start easy, then mix
+LEVEL_PLAN = ['easy', 'medium', 'medium', 'hard', 'easy', 'medium', 'hard', 'medium', 'easy', 'hard']
+
+TECHNICAL_SHARE = 0.7
+
 
 class QuestionGenerator:
     """Generate interview questions based on candidate skills"""
-    
-    def __init__(self, question_bank_path: str = 'data/question_bank.json',
-                 behavioral_bank_path: str = 'data/behavioral_questions.json'):
-        """
-        Initialize with question banks.
-        
-        Args:
-            question_bank_path: Path to technical question bank
-            behavioral_bank_path: Path to behavioral question bank
-        """
-        self.question_bank = self._load_bank(question_bank_path)
-        self.behavioral_bank = self._load_bank(behavioral_bank_path).get('behavioral', [])
-        
-    def _load_bank(self, path: str) -> dict:
-        """Load question bank from JSON file"""
-        try:
-            with open(path, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            raise QuestionGenerationError(f"Question bank not found: {path}")
-        except json.JSONDecodeError:
-            raise QuestionGenerationError(f"Invalid JSON in question bank: {path}")
-    
+
+    def __init__(self, questions_dir: str = QUESTIONS_DIR, behavioral_path: str = BEHAVIORAL_PATH):
+        self.bank = load_bank(questions_dir)
+        self.behavioral_bank = list(load_behavioral(behavioral_path))
+
     def generate_questions(self, skills: List[Dict], target_count: int = 10) -> List[Dict]:
         """
         Generate questions for a candidate based on skills.
-        
+
+        Technical questions are spread round-robin across the candidate's skills
+        with a mix of difficulty levels; about 30% of the session is behavioral.
+
         Args:
             skills: List of extracted skills [{'skill': 'Python', 'category': 'language'}, ...]
-            target_count: Number of questions to generate (8-12 default)
-            
+            target_count: Number of questions to generate
+
         Returns:
-            List of question dicts: [{'text': str, 'category': str, 'skill_tag': str, sequence: int}, ...]
+            List of question dicts: [{'text', 'category', 'skill_tag', 'level', 'source', 'sequence'}, ...]
         """
-        if not skills:
-            return self._generate_behavioral_questions(target_count)
-        
-        questions = []
-        used_questions = set()
-        
-        # Step 1: Generate technical questions (roughly 70% of total)
-        technical_target = int(target_count * 0.7)
-        technical = self._select_technical_questions(skills, technical_target, used_questions)
-        questions.extend(technical)
-        
-        # Step 2: Add behavioral questions (roughly 30% of total)
-        behavioral_target = target_count - len(technical)
-        behavioral = self._select_behavioral_questions(behavioral_target, used_questions)
-        questions.extend(behavioral)
-        
-        # Step 3: Truncate or pad to exact target_count
+        behavioral_target = min(len(self.behavioral_bank), target_count - round(target_count * TECHNICAL_SHARE))
+        technical_target = target_count - behavioral_target
+
+        skill_keys = self._matched_skills(skills)
+        technical = self._select_technical(skill_keys, technical_target, tag_general=False)
+        if len(technical) < technical_target:
+            used = {q['text'] for q in technical}
+            general = [s for s in GENERAL_SKILLS if s in self.bank]
+            technical += self._select_technical(general, technical_target - len(technical),
+                                                tag_general=True, used=used)
+
+        behavioral = self._select_behavioral(target_count - len(technical))
+
+        # Open with a technical question and spread behavioral ones through the session
+        questions = list(technical)
+        if behavioral:
+            step = max(2, len(questions) // len(behavioral) + 1)
+            for i, q in enumerate(behavioral):
+                questions.insert(min(len(questions), (i + 1) * step - 1), q)
+
         questions = questions[:target_count]
-        
-        # Step 4: Add sequence numbers and randomize order
         for i, q in enumerate(questions, 1):
             q['sequence'] = i
-        
-        # Shuffle but keep sequence order for database
-        random.shuffle(questions)
-        for i, q in enumerate(questions, 1):
-            q['sequence'] = i
-        
         return questions
-    
-    def _select_technical_questions(self, skills: List[Dict], target: int, used: set) -> List[Dict]:
-        """Select technical questions based on candidate skills"""
-        questions = []
-        
-        # Mapping from extracted skill names to question bank keys
-        skill_mapping = {
-            'python': 'python',
-            'java': 'java',
-            'javascript': 'javascript',
-            'typescript': 'javascript',
-            'c++': 'data-structures-algorithms',
-            'c#': 'python',
-            'go': 'python',
-            'rust': 'python',
-            'ruby': 'python',
-            'sql': 'sql',
-            'machine learning': 'machine-learning',
-            'ml': 'machine-learning',
-            'deep learning': 'tensorflow',
-            'tensorflow': 'tensorflow',
-            'pytorch': 'tensorflow',
-            'keras': 'tensorflow',
-            'opencv': 'opencv',
-            'computer vision': 'opencv',
-            'flask': 'flask',
-            'django': 'flask',
-            'react': 'react',
-            'angular': 'react',
-            'vue': 'react',
-            'html': 'javascript',
-            'css': 'javascript',
-            'aws': 'system-design',
-            'gcp': 'system-design',
-            'azure': 'system-design',
-            'docker': 'system-design',
-            'kubernetes': 'system-design',
-            'jenkins': 'system-design',
-            'git': 'javascript',
-            'linux': 'javascript',
-            'data structures': 'data-structures-algorithms',
-            'algorithms': 'data-structures-algorithms',
-            'system design': 'system-design',
-            'nlp': 'machine-learning',
-            'rest api': 'flask',
-            'graphql': 'flask',
-            'microservices': 'system-design',
-            'mongodb': 'sql',
-            'postgresql': 'sql',
-            'mysql': 'sql',
-            'redis': 'sql',
-            'data analysis': 'python',
-            'data science': 'python',
-            'tableau': 'python',
-            'excel': 'python',
-            'hadoop': 'machine-learning',
-            'spark': 'machine-learning',
-            'kafka': 'flask',
-            'agile': 'behavioral',
-            'scrum': 'behavioral',
-            'jira': 'javascript',
-            'testing': 'python',
-            'selenium': 'python',
-            'api': 'flask',
-            'oauth': 'flask',
-            'authentication': 'flask',
-        }
-        
-        # Map skills to question bank keys (handle variations)
-        for skill in skills:
-            skill_key = skill['skill'].lower().strip()
-            
-            # Direct match or use mapping
-            bank_key = skill_mapping.get(skill_key)
-            if not bank_key:
-                # Try fuzzy match - check if any question bank key is in the skill
-                for kb in self.question_bank:
-                    if kb in skill_key or skill_key in kb:
-                        bank_key = kb
-                        break
-            
-            if bank_key == 'behavioral':
-                # Behavioral skills (agile, scrum) are covered by the behavioral step
-                continue
-            if bank_key and bank_key in self.question_bank:
-                bank = self.question_bank[bank_key]
-            else:
-                # Try exact match in question bank keys
-                if skill_key in self.question_bank:
-                    bank = self.question_bank[skill_key]
-                else:
-                    continue
-            
-            # Add questions until we have enough
-            for q in bank:
-                if len(questions) >= target:
+
+    def _matched_skills(self, skills: List[Dict]) -> List[str]:
+        """Bank keys for the candidate's skills, de-duplicated, in a random order for variety."""
+        keys = []
+        for s in skills or []:
+            key = canonical_skill(s.get('skill', ''))
+            if key in self.bank and key not in keys:
+                keys.append(key)
+        random.shuffle(keys)
+        return keys
+
+    def _select_technical(self, skill_keys: List[str], target: int, tag_general: bool, used: set = None) -> List[Dict]:
+        """Round-robin over skills, picking the planned difficulty when available."""
+        used = set(used or ())
+        pools = {k: random.sample(self.bank[k], len(self.bank[k])) for k in skill_keys}
+        max_experience = max(1, target // 4)
+        experience_count = 0
+        selected = []
+
+        while len(selected) < target and any(pools.values()):
+            for key in skill_keys:
+                if len(selected) >= target:
                     break
-                if q not in used:
-                    questions.append({
-                        'text': q,
-                        'category': 'technical',
-                        'skill_tag': skill['skill'],
-                        'source': 'bank'
-                    })
-                    used.add(q)
-                
-            if len(questions) >= target:
-                break
-        
-        # Fill remaining with random technical questions if available
-        if len(questions) < target:
-            all_technical = []
-            for key, bank in self.question_bank.items():
-                if key == 'behavioral':
+                pool = [q for q in pools[key] if q['q'] not in used
+                        and (q['type'] != 'experience' or experience_count < max_experience)]
+                if not pool:
+                    pools[key] = []
                     continue
-                all_technical.extend(bank)
-            
-            for q in random.sample(all_technical, min(len(all_technical), target - len(questions))):
-                if q not in used:
-                    questions.append({
-                        'text': q,
-                        'category': 'technical',
-                        'skill_tag': 'general',
-                        'source': 'bank'
-                    })
-                    used.add(q)
-        
-        return questions
-    
-    def _select_behavioral_questions(self, target: int, used: set) -> List[Dict]:
-        """Select behavioral questions"""
-        questions = []
-        
-        available = [q for q in self.behavioral_bank if q not in used]
-        selected = random.sample(available, min(len(available), target))
-        
-        for q in selected:
-            questions.append({
-                'text': q,
-                'category': 'behavioral',
-                'skill_tag': 'communication',
-                'source': 'bank'
-            })
-            used.add(q)
-        
-        return questions
-    
-    def _generate_behavioral_questions(self, target: int) -> List[Dict]:
-        """Fallback: Generate only behavioral questions if no skills found"""
-        selected = random.sample(self.behavioral_bank, min(len(self.behavioral_bank), target))
-        
+                want = LEVEL_PLAN[len(selected) % len(LEVEL_PLAN)]
+                q = next((q for q in pool if q['level'] == want), pool[0])
+                pools[key].remove(q)
+                used.add(q['q'])
+                experience_count += q['type'] == 'experience'
+                selected.append({
+                    'text': q['q'],
+                    'category': 'technical',
+                    'skill_tag': 'general' if tag_general else q['skill'].title(),
+                    'level': q['level'],
+                    'source': 'bank',
+                })
+        return selected
+
+    def _select_behavioral(self, target: int) -> List[Dict]:
+        selected = random.sample(self.behavioral_bank, min(len(self.behavioral_bank), max(0, target)))
         return [{
             'text': q,
             'category': 'behavioral',
             'skill_tag': 'communication',
-            'sequence': i,
-            'source': 'bank'
-        } for i, q in enumerate(selected, 1)]
+            'level': 'medium',
+            'source': 'bank',
+        } for q in selected]
+
 
 def generate_questions_for_session(candidate_skills: List[Dict], target_count: int = 10) -> List[Dict]:
     """
     Convenience function to generate questions.
-    
+
     Args:
         candidate_skills: List of extracted skills
         target_count: Target question count (8-12)
-        
+
     Returns:
         List of questions ready to store in database
     """

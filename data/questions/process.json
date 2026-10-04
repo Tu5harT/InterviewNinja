@@ -1,0 +1,89 @@
+{
+  "agile": [
+    {"q": "What are the core values of the Agile Manifesto?", "type": "concept", "level": "easy",
+     "answer": "The Agile Manifesto values individuals and interactions over processes and tools, working software over comprehensive documentation, customer collaboration over contract negotiation, and responding to change over following a plan. The items on the right still matter, but the items on the left matter more. In practice this means short iterations, frequent feedback and continuous improvement.",
+     "points": [
+       {"point": "Agile values individuals and interactions over processes and tools.", "keywords": ["individuals and interactions", "people over process"]},
+       {"point": "Agile values working software over comprehensive documentation.", "keywords": ["working software", "documentation"]},
+       {"point": "Agile values customer collaboration over contract negotiation.", "keywords": ["customer collaboration", "collaboration"]},
+       {"point": "Agile values responding to change over following a plan.", "keywords": ["responding to change", "embrace change", "change"]}]},
+    {"q": "How is Agile different from the Waterfall model?", "type": "concept", "level": "easy",
+     "answer": "Waterfall runs sequential phases, requirements, design, build, test and release, each finished before the next, so the product is delivered once at the end and changes are costly. Agile delivers in short iterations, each producing working software, gathering feedback and adapting the plan. Agile handles changing requirements and reduces risk through early feedback; Waterfall can suit projects with fixed, well-understood requirements.",
+     "points": [
+       {"point": "Waterfall runs sequential phases with delivery at the end.", "keywords": ["sequential", "phases", "linear", "at the end"]},
+       {"point": "Agile delivers working software in short iterations.", "keywords": ["iteration", "iterative", "incremental", "sprint"]},
+       {"point": "Agile adapts to changing requirements through frequent feedback.", "keywords": ["feedback", "changing requirements", "adapt", "flexible"]},
+       {"point": "Waterfall suits projects with fixed, well-understood requirements.", "keywords": ["fixed requirements", "well defined", "well-defined", "clear requirements"]}]},
+    {"q": "What makes a good user story, and what are acceptance criteria?", "type": "concept", "level": "medium",
+     "answer": "A user story describes a need from the user's perspective, often as 'As a [user], I want [goal], so that [benefit]'. Good stories follow INVEST: independent, negotiable, valuable, estimable, small and testable. Acceptance criteria are the specific, testable conditions that must be met for the story to be done, often written as Given/When/Then scenarios.",
+     "points": [
+       {"point": "A user story follows the format As a user, I want a goal, so that a benefit.", "keywords": ["as a", "i want", "so that"]},
+       {"point": "Good user stories follow the INVEST criteria.", "keywords": ["invest", "independent", "small", "testable"]},
+       {"point": "Acceptance criteria define testable conditions for the story to be done.", "keywords": ["acceptance criteria", "conditions", "testable"]},
+       {"point": "Acceptance criteria are often written as Given, When, Then.", "keywords": ["given", "when", "then"]}]},
+    {"q": "How do agile teams estimate work, and what is velocity?", "type": "concept", "level": "medium",
+     "answer": "Teams often estimate in story points, a relative measure of effort, complexity and uncertainty rather than hours, using techniques like planning poker to reach consensus. Velocity is the number of points a team completes per sprint, averaged over several sprints, and is used to forecast how much fits in future sprints. It's a planning tool for that team only, not a productivity score to compare teams.",
+     "points": [
+       {"point": "Story points estimate relative effort and complexity rather than hours.", "keywords": ["story points", "relative", "complexity", "effort"]},
+       {"point": "Planning poker builds team consensus on estimates.", "keywords": ["planning poker", "consensus", "fibonacci"]},
+       {"point": "Velocity is the amount of work completed per sprint.", "keywords": ["velocity", "per sprint", "completed"]},
+       {"point": "Velocity should not be used to compare teams.", "keywords": ["compare teams", "not a productivity", "not a performance", "only for planning"]}]},
+    {"q": "What is Kanban and how does it differ from Scrum?", "type": "concept", "level": "medium",
+     "answer": "Kanban visualises work on a board with columns for each stage and limits work in progress per column, so the team finishes work before starting more; flow is continuous rather than in fixed sprints, and metrics like lead time and cycle time drive improvement. Scrum uses fixed-length sprints with defined roles and ceremonies. Kanban suits work with unpredictable arrival, like support or operations.",
+     "points": [
+       {"point": "Kanban visualises work on a board with columns.", "keywords": ["board", "columns", "visualize", "visualise"]},
+       {"point": "Kanban limits work in progress.", "keywords": ["wip", "work in progress", "limit"]},
+       {"point": "Kanban uses continuous flow instead of fixed sprints.", "keywords": ["continuous", "no sprints", "flow"]},
+       {"point": "Kanban tracks lead time and cycle time.", "keywords": ["lead time", "cycle time"]}]},
+    {"q": "How do you handle a requirement that changes in the middle of a sprint?", "type": "concept", "level": "hard",
+     "answer": "Don't silently absorb it. Clarify the change and its urgency with the product owner. Normally it goes into the backlog to be prioritised for a future sprint, protecting the sprint goal. If it's truly urgent, the team and product owner negotiate: swap it for work of similar size that hasn't started, and if the sprint goal becomes obsolete the product owner can cancel the sprint. Discuss it in the retrospective if it keeps happening.",
+     "points": [
+       {"point": "Discuss the change and its priority with the product owner.", "keywords": ["product owner", "discuss", "clarify"]},
+       {"point": "Normally the change is added to the backlog for a future sprint.", "keywords": ["backlog", "next sprint", "future sprint"]},
+       {"point": "Urgent changes are swapped for work of similar size to protect the sprint goal.", "keywords": ["swap", "trade", "sprint goal", "remove something"]},
+       {"point": "Recurring disruption should be raised in the retrospective.", "keywords": ["retrospective", "retro"]}]},
+    {"q": "Tell me about a time you worked in an agile team. What worked well and what didn't?", "type": "experience", "level": "medium",
+     "answer": "A strong answer describes the team and process, your role, specific practices that worked (stand-ups, demos, retros), a problem with the process, what you or the team changed, and the result."},
+    {"q": "Describe a time you had to deliver under a tight deadline. How did you prioritise?", "type": "experience", "level": "hard",
+     "answer": "A strong answer explains the deadline and stakes, how you worked with stakeholders to define the minimum valuable scope, what you cut or deferred and why, how you communicated risks, and whether you delivered."}
+  ],
+  "scrum": [
+    {"q": "What are the three roles in Scrum?", "type": "concept", "level": "easy",
+     "answer": "The Product Owner owns the product backlog and maximises value by deciding priorities. The Scrum Master coaches the team on Scrum, facilitates events and removes impediments; they're a servant leader, not a manager. The Developers are the cross-functional, self-managing team that does the work of building the increment each sprint.",
+     "points": [
+       {"point": "The Product Owner manages and prioritises the product backlog.", "keywords": ["product owner", "backlog", "prioritize", "prioritise"]},
+       {"point": "The Scrum Master facilitates and removes impediments.", "keywords": ["scrum master", "impediment", "facilitate", "blocker", "servant leader"]},
+       {"point": "The developers are a self-managing team that builds the product.", "keywords": ["developers", "development team", "self-managing", "self-organizing", "cross-functional"]}]},
+    {"q": "What are the Scrum events, and what is the purpose of each?", "type": "concept", "level": "easy",
+     "answer": "The sprint is a fixed time box, usually one to four weeks. Sprint planning decides the sprint goal and which backlog items to work on. The daily scrum is a short daily sync on progress towards the goal and any blockers. The sprint review demonstrates the increment to stakeholders for feedback, and the retrospective looks at how the team worked and picks improvements.",
+     "points": [
+       {"point": "Sprint planning decides what work the team will do in the sprint.", "keywords": ["sprint planning", "planning"]},
+       {"point": "The daily scrum is a short daily meeting on progress and blockers.", "keywords": ["daily scrum", "stand-up", "standup", "daily"]},
+       {"point": "The sprint review shows the completed work to stakeholders.", "keywords": ["sprint review", "review", "demo", "stakeholders"]},
+       {"point": "The retrospective reflects on the process to find improvements.", "keywords": ["retrospective", "retro", "improve"]}]},
+    {"q": "What are the Scrum artifacts?", "type": "concept", "level": "medium",
+     "answer": "The product backlog is the ordered list of everything that might be needed in the product, owned by the Product Owner, with the product goal as its commitment. The sprint backlog is the sprint goal plus the selected items and the plan to deliver them, owned by the developers. The increment is the usable, done work produced in the sprint, and its commitment is the Definition of Done.",
+     "points": [
+       {"point": "The product backlog is an ordered list of all work for the product.", "keywords": ["product backlog", "ordered list", "prioritized list"]},
+       {"point": "The sprint backlog contains the items selected for the sprint.", "keywords": ["sprint backlog", "selected"]},
+       {"point": "The increment is the usable work completed in the sprint.", "keywords": ["increment", "usable", "potentially shippable"]},
+       {"point": "The Definition of Done defines when work is complete.", "keywords": ["definition of done", "done"]}]},
+    {"q": "What is the Definition of Done, and how is it different from acceptance criteria?", "type": "concept", "level": "medium",
+     "answer": "The Definition of Done is a shared checklist that applies to every backlog item, for example code reviewed, tests passing, documented and deployed to staging; an item that doesn't meet it isn't part of the increment. Acceptance criteria are specific to one story and describe the behaviour that story must have. An item is complete when it meets both.",
+     "points": [
+       {"point": "The Definition of Done applies to all backlog items.", "keywords": ["all items", "every item", "every story", "whole team"]},
+       {"point": "Acceptance criteria are specific to a single story.", "keywords": ["specific", "single story", "each story", "one story"]},
+       {"point": "The Definition of Done includes quality checks like code review and tests.", "keywords": ["code review", "tests", "tested", "documented", "deployed"]}]},
+    {"q": "As a team member, how would you handle a teammate who repeatedly misses sprint commitments?", "type": "concept", "level": "hard",
+     "answer": "Start with a private, non-judgemental conversation to understand the cause, which might be unclear requirements, blockers, too much work, skill gaps or personal issues. Offer help such as pairing or breaking work into smaller pieces. Raise systemic causes, like over-commitment or poor estimates, in the retrospective rather than blaming individuals. If it continues, involve the Scrum Master to remove impediments.",
+     "points": [
+       {"point": "First talk privately to understand the root cause.", "keywords": ["talk", "privately", "one on one", "understand", "root cause"]},
+       {"point": "Offer support such as pairing or splitting work into smaller tasks.", "keywords": ["help", "pair", "pairing", "support", "smaller tasks"]},
+       {"point": "Raise systemic issues in the retrospective without blaming individuals.", "keywords": ["retrospective", "retro", "blame", "team issue"]},
+       {"point": "Involve the Scrum Master if the problem continues.", "keywords": ["scrum master", "escalate"]}]},
+    {"q": "Tell me about your experience working in Scrum. What was your role in the ceremonies?", "type": "experience", "level": "medium",
+     "answer": "A strong answer describes the team setup, sprint length and ceremonies, your concrete contributions (estimating, demoing, raising blockers, improving retros), an example where the process helped or struggled, and what you learned."},
+    {"q": "Describe a retrospective that led to a real improvement in how your team worked.", "type": "experience", "level": "medium",
+     "answer": "A strong answer explains the problem raised, how the team discussed it, the specific action agreed, who owned it, and the measurable change in the following sprints."}
+  ]
+}

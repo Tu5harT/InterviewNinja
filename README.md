@@ -100,9 +100,9 @@ start.bat
 ## First-Time Setup Notes
 
 On first run, several AI models will be downloaded automatically:
-- `all-MiniLM-L6-v2` (sentence-transformers) - for answer quality analysis
+- `all-MiniLM-L6-v2` (sentence-transformers) - for answer relevance and STAR structure
+- `cross-encoder/nli-deberta-v3-xsmall` (~280 MB) - for checking which key points an answer states
 - MediaPipe models - for posture analysis
-- DeepFace models - for emotion analysis
 
 This may take 5-10 minutes depending on your internet connection.
 
@@ -127,7 +127,7 @@ interviewNinja/
 ├── templates/          # HTML templates
 ├── static/            # CSS, JS files
 ├── data/              # Question banks, models
-│   ├── question_bank.json
+│   ├── questions/          # Per-skill questions with model answers and key points
 │   ├── behavioral_questions.json
 │   ├── skills_taxonomy.json
 │   └── pose_landmarker_lite.task
@@ -135,6 +135,41 @@ interviewNinja/
 ├── recordings/        # Video/audio recordings
 └── instance/         # SQLite database
 ```
+
+## Question Bank & Answer Grading
+
+Questions live in `data/questions/*.json`, one file per area (languages, web, data, AI,
+cloud/DevOps, CS fundamentals, process). Every skill the resume parser can detect
+(`data/skills_taxonomy.json`) has its own bank with easy, medium and hard questions.
+
+Each technical question has a model answer and 2–6 **key points** written as short
+factual statements, plus keywords (including common spoken variants):
+
+```json
+{"q": "What's the difference between a list and a tuple in Python?", "type": "concept", "level": "easy",
+ "answer": "Lists are mutable ... tuples are immutable ...",
+ "points": [{"point": "Lists are mutable, while tuples are immutable.", "keywords": ["mutable", "immutable"]}]}
+```
+
+Answers are graded offline (`services/answer_analyzer.py`):
+
+- **Technical (`concept`) questions** — for each key point, a natural language inference model
+  checks whether the transcript *states* it. This credits correct answers phrased in the
+  candidate's own words, and gives nothing for restating the question or for wrong
+  statements that use the right terms ("lists and tuples are both mutable").
+- **Experience and behavioral questions** — graded on STAR structure (situation, task,
+  action, result) and specificity.
+
+The report shows each question with the key points covered and missed, and the model answer.
+
+When adding questions, write key points as single, simple factual sentences. Then check that
+the bank loads, and that each model answer is graded as covering all of its own key points:
+
+```bash
+python scripts/check_question_bank.py python sql
+```
+
+Pass skill names to check just those banks, or no arguments to check everything (a few minutes).
 
 ## Troubleshooting
 
